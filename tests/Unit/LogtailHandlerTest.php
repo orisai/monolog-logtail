@@ -2,9 +2,9 @@
 
 namespace Tests\Orisai\MonologLogtail\Unit;
 
-use Monolog\Test\TestCase;
 use Orisai\MonologLogtail\LogtailClient;
 use Orisai\MonologLogtail\LogtailHandler;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\Psr18Client;
 
 final class LogtailHandlerTest extends TestCase

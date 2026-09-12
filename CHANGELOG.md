@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased](https://github.com/orisai/monolog-logtail/compare/1.0.2...v1.x)
 
+### Added
+
+- `LogtailFormatter`
+
+### Changed
+
+- `LogtailHandler`
+	- Sends records formatted by `LogtailFormatter`, instead of the raw Monolog record
+	- `level` is now the level name, `level_value` holds the integer level and `level_name` was removed
+	- Context and extra are normalized, so exceptions are expanded
+
 ## [1.0.2](https://github.com/orisai/monolog-logtail/compare/1.0.1...1.0.2) - 2024-12-29
 
 ### Added

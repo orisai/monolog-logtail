@@ -2,9 +2,7 @@
 
 namespace Orisai\MonologLogtail;
 
-use DateTimeImmutable;
 use Monolog\Formatter\FormatterInterface;
-use Monolog\Formatter\NormalizerFormatter;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Handler\BufferHandler;
 use Monolog\Level;
@@ -13,6 +11,7 @@ use Monolog\LogRecord;
 use Psr\Log\LogLevel;
 use Throwable;
 use function assert;
+use function is_array;
 use function register_shutdown_function;
 
 final class LogtailHandler extends AbstractProcessingHandler
@@ -41,19 +40,10 @@ final class LogtailHandler extends AbstractProcessingHandler
 	 */
 	protected function write($record): void
 	{
-		if ($record instanceof LogRecord) {
-			$datetime = $record->datetime;
-			$record = $record->toArray();
-		} else {
-			$datetime = $record['datetime'];
-			assert($datetime instanceof DateTimeImmutable);
-			unset($record['formatted']);
-		}
+		$formatted = $record instanceof LogRecord ? $record->formatted : $record['formatted'];
+		assert(is_array($formatted));
 
-		unset($record['datetime']);
-		$record['dt'] = $datetime->format($datetime::ATOM);
-
-		$this->records[] = $record;
+		$this->records[] = $formatted;
 	}
 
 	private function flush(): void
@@ -89,7 +79,7 @@ final class LogtailHandler extends AbstractProcessingHandler
 
 	protected function getDefaultFormatter(): FormatterInterface
 	{
-		return new NormalizerFormatter();
+		return new LogtailFormatter();
 	}
 
 	/**

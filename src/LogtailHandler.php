@@ -46,6 +46,12 @@ final class LogtailHandler extends AbstractProcessingHandler
 		$this->records[] = $formatted;
 	}
 
+	public function handleBatch(array $records): void
+	{
+		parent::handleBatch($records);
+		$this->flush();
+	}
+
 	private function flush(): void
 	{
 		if ($this->records !== []) {

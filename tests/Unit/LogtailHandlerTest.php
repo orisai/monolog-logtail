@@ -20,7 +20,13 @@ final class LogtailHandlerTest extends TestCase
 	public function testLazy(): void
 	{
 		$httpClient = new Psr18Client();
-		$client = new LogtailClient('token', $httpClient, $httpClient, $httpClient);
+		$client = new LogtailClient(
+			'token',
+			'https://s1.example.betterstackdata.com/',
+			$httpClient,
+			$httpClient,
+			$httpClient,
+		);
 		$handler = new LogtailHandler($client);
 
 		$handler->close();
@@ -34,7 +40,9 @@ final class LogtailHandlerTest extends TestCase
 	{
 		$httpClient = new CollectingHttpClient();
 		$psr17 = new Psr17Factory();
-		$handler = new LogtailHandler(new LogtailClient('token', $httpClient, $psr17, $psr17));
+		$handler = new LogtailHandler(
+			new LogtailClient('token', 'https://s1.example.betterstackdata.com/', $httpClient, $psr17, $psr17),
+		);
 
 		$logger = new Logger('app');
 		$logger->pushHandler($handler);
@@ -54,7 +62,9 @@ final class LogtailHandlerTest extends TestCase
 	{
 		$httpClient = new CollectingHttpClient();
 		$psr17 = new Psr17Factory();
-		$handler = new LogtailHandler(new LogtailClient('token', $httpClient, $psr17, $psr17));
+		$handler = new LogtailHandler(
+			new LogtailClient('token', 'https://s1.example.betterstackdata.com/', $httpClient, $psr17, $psr17),
+		);
 		$buffer = new BufferHandler($handler, 2, Logger::DEBUG, true, true);
 
 		$logger = new Logger('app');

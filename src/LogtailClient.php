@@ -20,7 +20,7 @@ final class LogtailClient
 
 	private string $token;
 
-	private string $url = 'https://in.logtail.com/';
+	private string $url;
 
 	private ClientInterface $client;
 
@@ -34,20 +34,17 @@ final class LogtailClient
 
 	public function __construct(
 		string $token,
+		string $url,
 		ClientInterface $client,
 		RequestFactoryInterface $requestFactory,
 		StreamFactoryInterface $streamFactory
 	)
 	{
 		$this->token = $token;
+		$this->url = $url;
 		$this->client = $client;
 		$this->requestFactory = $requestFactory;
 		$this->streamFactory = $streamFactory;
-	}
-
-	public function setUrl(string $url): void
-	{
-		$this->url = $url;
 	}
 
 	public function setRetryAfter(int $seconds): void

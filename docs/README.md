@@ -19,7 +19,8 @@ Install with [Composer](https://getcomposer.org)
 composer require orisai/monolog-logtail
 ```
 
-Get your API token at logtail.com -> sources -> edit.
+Get your source token and ingesting host at betterstack.com -> Telemetry -> Sources -> your source. Every source has
+its own ingesting host, there is no default URL.
 
 ## Basic configuration
 
@@ -33,14 +34,15 @@ use Symfony\Component\HttpClient\Psr18Client;
 
 $logger = new Logger();
 
-$token = '<YOUR_LOGTAIL_TOKEN>';
+$token = '<YOUR_SOURCE_TOKEN>';
+$url = 'https://<YOUR_INGESTING_HOST>/';
 
 // Symfony PSR-18 client is just an example, use any PSR-18 client you like
 $client = $requestFactory = $streamFactory = new Psr18Client();
 
 $logger->pushHandler(
 	new LogtailHandler(
-		new LogtailClient($token, $client, $requestFactory, $streamFactory)
+		new LogtailClient($token, $url, $client, $requestFactory, $streamFactory)
 	),
 );
 ```
@@ -117,10 +119,11 @@ orisai.monolog:
 	handlers:
 		logtail:
 			service: Orisai\MonologLogtail\LogtailHandler(
-				Orisai\MonologLogtail\LogtailClient(%logtail.token%)
+				Orisai\MonologLogtail\LogtailClient(%logtail.token%, %logtail.url%)
 			)
 
 parameters:
 	logtail:
-		token: <YOUR_LOGTAIL_TOKEN>
+		token: <YOUR_SOURCE_TOKEN>
+		url: https://<YOUR_INGESTING_HOST>/
 ```

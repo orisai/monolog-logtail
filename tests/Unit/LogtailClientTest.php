@@ -26,6 +26,7 @@ final class LogtailClientTest extends TestCase
 		self::assertCount(1, $requests);
 		$request = $requests[0];
 		self::assertSame('POST', $request->getMethod());
+		self::assertSame('https://s1.example.betterstackdata.com/', (string) $request->getUri());
 		self::assertSame('Bearer token', $request->getHeaderLine('Authorization'));
 		self::assertSame('application/json', $request->getHeaderLine('Content-Type'));
 		self::assertSame(
@@ -119,7 +120,7 @@ final class LogtailClientTest extends TestCase
 	{
 		$psr17 = new Psr17Factory();
 
-		return new LogtailClient('token', $httpClient, $psr17, $psr17);
+		return new LogtailClient('token', 'https://s1.example.betterstackdata.com/', $httpClient, $psr17, $psr17);
 	}
 
 }

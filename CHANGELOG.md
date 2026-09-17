@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased](https://github.com/orisai/monolog-logtail/compare/1.1.0...v1.x)
 
+### Added
+
+- `LogtailClient`
+	- `setRetryAfter()` - after a failed request, records are dropped for a cooldown (60 seconds by default) instead of retrying with every batch
+
+### Changed
+
+- `LogtailHandler`
+	- `handleBatch()` sends the batch immediately, together with any queued records, so records buffered by e.g. `BufferHandler` don't stay in memory until `reset()` or `close()`
+
 ## [1.1.0](https://github.com/orisai/monolog-logtail/compare/1.0.2...1.1.0) - 2026-09-17
 
 ### Added

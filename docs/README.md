@@ -7,6 +7,8 @@
 - [Setup](#setup)
 - [Basic configuration](#basic-configuration)
 - [Sent data](#sent-data)
+- [Batches](#batches)
+- [Outage handling](#outage-handling)
 - [Nette configuration](#nette-configuration)
 
 ## Setup
@@ -69,6 +71,36 @@ Records are formatted by `Orisai\MonologLogtail\LogtailFormatter` and sent in th
 
 Context and extra are normalized - objects are converted to arrays and exceptions are expanded into
 `class`, `message`, `code`, `file` and `trace`.
+
+## Batches
+
+Records passed to `LogtailHandler::handle()` are queued in memory and sent in a single request when the handler is
+reset or closed (Monolog does that at the end of each request, on `Logger::reset()` and in the destructor).
+
+Records passed to `LogtailHandler::handleBatch()` are sent immediately, together with any queued records. Wrap the
+handler in a [`BufferHandler`](https://github.com/Seldaek/monolog/blob/main/src/Monolog/Handler/BufferHandler.php)
+with `flushOnOverflow` enabled to send long-running processes' records in bounded batches:
+
+```php
+use Monolog\Handler\BufferHandler;
+use Monolog\Logger;
+
+$logger->pushHandler(
+	new BufferHandler($logtailHandler, 2_000, Logger::DEBUG, true, true),
+);
+```
+
+## Outage handling
+
+When a request fails (transport error or an error response), the exception is thrown so the failure can be reported,
+and `LogtailClient` drops all records for a cooldown period instead of retrying on every following batch. Cooldown
+is 60 seconds by default:
+
+```php
+$client->setRetryAfter(120);
+```
+
+Set `0` to retry with every request.
 
 ## Nette configuration
 

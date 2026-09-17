@@ -4,12 +4,11 @@ namespace Tests\Orisai\MonologLogtail\Unit;
 
 use Monolog\Handler\BufferHandler;
 use Monolog\Logger;
-use Nyholm\Psr7\Factory\Psr17Factory;
 use Orisai\MonologLogtail\LogtailClient;
 use Orisai\MonologLogtail\LogtailHandler;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpClient\Psr18Client;
-use Tests\Orisai\MonologLogtail\Unit\Fixtures\CollectingHttpClient;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Tests\Orisai\MonologLogtail\Unit\Fixtures\ResponseQueue;
 use function array_column;
 use function json_decode;
 use const JSON_THROW_ON_ERROR;
@@ -19,14 +18,7 @@ final class LogtailHandlerTest extends TestCase
 
 	public function testLazy(): void
 	{
-		$httpClient = new Psr18Client();
-		$client = new LogtailClient(
-			'token',
-			'https://s1.example.betterstackdata.com/',
-			$httpClient,
-			$httpClient,
-			$httpClient,
-		);
+		$client = new LogtailClient('token', 'https://s1.example.betterstackdata.com/');
 		$handler = new LogtailHandler($client);
 
 		$handler->close();
@@ -38,10 +30,9 @@ final class LogtailHandlerTest extends TestCase
 
 	public function testResetSendsBufferedRecordsOnce(): void
 	{
-		$httpClient = new CollectingHttpClient();
-		$psr17 = new Psr17Factory();
+		$httpClient = new ResponseQueue();
 		$handler = new LogtailHandler(
-			new LogtailClient('token', 'https://s1.example.betterstackdata.com/', $httpClient, $psr17, $psr17),
+			new LogtailClient('token', 'https://s1.example.betterstackdata.com/', new MockHttpClient($httpClient)),
 		);
 
 		$logger = new Logger('app');
@@ -60,10 +51,9 @@ final class LogtailHandlerTest extends TestCase
 
 	public function testHandleBatchSendsImmediately(): void
 	{
-		$httpClient = new CollectingHttpClient();
-		$psr17 = new Psr17Factory();
+		$httpClient = new ResponseQueue();
 		$handler = new LogtailHandler(
-			new LogtailClient('token', 'https://s1.example.betterstackdata.com/', $httpClient, $psr17, $psr17),
+			new LogtailClient('token', 'https://s1.example.betterstackdata.com/', new MockHttpClient($httpClient)),
 		);
 		$buffer = new BufferHandler($handler, 2, Logger::DEBUG, true, true);
 
@@ -79,7 +69,7 @@ final class LogtailHandlerTest extends TestCase
 		self::assertCount(1, $requests);
 		self::assertSame(
 			['one', 'two'],
-			array_column(json_decode((string) $requests[0]->getBody(), true, 512, JSON_THROW_ON_ERROR), 'message'),
+			array_column(json_decode($httpClient->getBodies()[0], true, 512, JSON_THROW_ON_ERROR), 'message'),
 		);
 
 		$buffer->flush();
@@ -87,7 +77,7 @@ final class LogtailHandlerTest extends TestCase
 		self::assertCount(2, $requests);
 		self::assertSame(
 			['three'],
-			array_column(json_decode((string) $requests[1]->getBody(), true, 512, JSON_THROW_ON_ERROR), 'message'),
+			array_column(json_decode($httpClient->getBodies()[1], true, 512, JSON_THROW_ON_ERROR), 'message'),
 		);
 
 		$handler->reset();

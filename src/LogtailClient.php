@@ -3,10 +3,9 @@
 namespace Orisai\MonologLogtail;
 
 use Orisai\Exceptions\Logic\InvalidArgument;
-use Psr\Http\Client\ClientExceptionInterface;
-use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\RequestFactoryInterface;
-use Psr\Http\Message\StreamFactoryInterface;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 use function json_encode;
 use function time;
 use const JSON_PRESERVE_ZERO_FRACTION;
@@ -18,33 +17,28 @@ use const JSON_UNESCAPED_UNICODE;
 final class LogtailClient
 {
 
+	private const DefaultTimeout = 2;
+
+	private const DefaultMaxDuration = 3;
+
 	private string $token;
 
 	private string $url;
 
-	private ClientInterface $client;
-
-	private RequestFactoryInterface $requestFactory;
-
-	private StreamFactoryInterface $streamFactory;
+	private HttpClientInterface $client;
 
 	private int $retryAfterSeconds = 60;
 
 	private ?int $failedAt = null;
 
-	public function __construct(
-		string $token,
-		string $url,
-		ClientInterface $client,
-		RequestFactoryInterface $requestFactory,
-		StreamFactoryInterface $streamFactory
-	)
+	public function __construct(string $token, string $url, ?HttpClientInterface $client = null)
 	{
 		$this->token = $token;
 		$this->url = $url;
-		$this->client = $client;
-		$this->requestFactory = $requestFactory;
-		$this->streamFactory = $streamFactory;
+		$this->client = $client ?? HttpClient::create([
+			'timeout' => self::DefaultTimeout,
+			'max_duration' => self::DefaultMaxDuration,
+		]);
 	}
 
 	public function setRetryAfter(int $seconds): void
@@ -54,7 +48,7 @@ final class LogtailClient
 
 	/**
 	 * @param array<mixed>|array<array<mixed>> $data
-	 * @throws ClientExceptionInterface
+	 * @throws TransportExceptionInterface
 	 */
 	public function log(array $data): void
 	{
@@ -69,27 +63,25 @@ final class LogtailClient
 
 	/**
 	 * @param array<mixed>|array<array<mixed>> $data
-	 * @throws ClientExceptionInterface
+	 * @throws TransportExceptionInterface
 	 */
 	private function send(array $data): void
 	{
-		$request = $this->requestFactory->createRequest('POST', $this->url);
-		$request = $request
-			->withHeader('Authorization', "Bearer $this->token")
-			->withHeader('Content-Type', 'application/json')
-			->withBody($this->streamFactory->createStream(
-				json_encode(
-					$data,
-					JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
-				),
-			));
-
-		$response = $this->client->sendRequest($request);
+		$response = $this->client->request('POST', $this->url, [
+			'headers' => [
+				'Authorization' => "Bearer $this->token",
+				'Content-Type' => 'application/json',
+			],
+			'body' => json_encode(
+				$data,
+				JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+			),
+		]);
 
 		$code = $response->getStatusCode();
 		if ($code >= 400) {
 			throw InvalidArgument::create()
-				->withMessage("Logtail returned an error ($code): {$response->getBody()->getContents()}");
+				->withMessage("Logtail returned an error ($code): {$response->getContent(false)}");
 		}
 	}
 

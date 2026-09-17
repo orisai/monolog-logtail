@@ -37,7 +37,7 @@ $token = '<YOUR_SOURCE_TOKEN>';
 $url = 'https://<YOUR_INGESTING_HOST>/';
 $logger->pushHandler(
 	new LogtailHandler(
-		new LogtailClient($token, $url, /* ... */)
+		new LogtailClient($token, $url)
 	),
 );
 

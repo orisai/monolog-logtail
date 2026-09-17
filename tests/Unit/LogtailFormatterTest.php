@@ -6,13 +6,13 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
-use Nyholm\Psr7\Factory\Psr17Factory;
 use Orisai\MonologLogtail\LogtailClient;
 use Orisai\MonologLogtail\LogtailFormatter;
 use Orisai\MonologLogtail\LogtailHandler;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use Tests\Orisai\MonologLogtail\Unit\Fixtures\CollectingHttpClient;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Tests\Orisai\MonologLogtail\Unit\Fixtures\ResponseQueue;
 use function array_intersect_key;
 use function array_keys;
 use function json_decode;
@@ -23,10 +23,9 @@ final class LogtailFormatterTest extends TestCase
 
 	public function testSentRecords(): void
 	{
-		$httpClient = new CollectingHttpClient();
-		$psr17 = new Psr17Factory();
+		$httpClient = new ResponseQueue();
 		$handler = new LogtailHandler(
-			new LogtailClient('token', 'https://s1.example.betterstackdata.com/', $httpClient, $psr17, $psr17),
+			new LogtailClient('token', 'https://s1.example.betterstackdata.com/', new MockHttpClient($httpClient)),
 		);
 
 		$logger = new Logger('app');
@@ -44,10 +43,10 @@ final class LogtailFormatterTest extends TestCase
 		self::assertCount(1, $requests);
 
 		$request = $requests[0];
-		self::assertSame('Bearer token', $request->getHeaderLine('Authorization'));
-		self::assertSame('application/json', $request->getHeaderLine('Content-Type'));
+		self::assertContains('Authorization: Bearer token', $request['options']['headers']);
+		self::assertContains('Content-Type: application/json', $request['options']['headers']);
 
-		$records = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
+		$records = json_decode($httpClient->getBodies()[0], true, 512, JSON_THROW_ON_ERROR);
 		self::assertIsArray($records);
 		self::assertCount(2, $records);
 

@@ -11,11 +11,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - `LogtailClient`
 	- Ingesting URL is a required constructor argument - every Better Stack source has its own host and the former default `https://in.logtail.com/` no longer exists
+	- Requests are sent through `symfony/http-client` instead of a PSR-18 client - constructor is `(string $token, string $url, ?HttpClientInterface $client = null)`, by default a client with 2 seconds timeout and 3 seconds max duration is created
+	- Transport failures throw `Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface` instead of `Psr\Http\Client\ClientExceptionInterface`
 
 ### Removed
 
 - `LogtailClient`
 	- `setUrl()` - pass the URL to constructor
+- Composer
+	- `psr/http-client`, `psr/http-factory` and `psr/http-message` are no longer required
 
 ## [1.2.0](https://github.com/orisai/monolog-logtail/compare/1.1.0...1.2.0) - 2026-09-17
 

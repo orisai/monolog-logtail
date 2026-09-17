@@ -24,27 +24,35 @@ its own ingesting host, there is no default URL.
 
 ## Basic configuration
 
-Example uses `symfony/http-client` PSR-18 integration. Install it in order to get example working.
-
 ```php
 use Monolog\Logger;
 use Orisai\MonologLogtail\LogtailClient;
 use Orisai\MonologLogtail\LogtailHandler;
-use Symfony\Component\HttpClient\Psr18Client;
+use Symfony\Component\HttpClient\HttpClient;
 
 $logger = new Logger();
 
 $token = '<YOUR_SOURCE_TOKEN>';
 $url = 'https://<YOUR_INGESTING_HOST>/';
 
-// Symfony PSR-18 client is just an example, use any PSR-18 client you like
-$client = $requestFactory = $streamFactory = new Psr18Client();
-
 $logger->pushHandler(
 	new LogtailHandler(
-		new LogtailClient($token, $url, $client, $requestFactory, $streamFactory)
+		new LogtailClient($token, $url)
 	),
 );
+```
+
+Requests are sent synchronously through [symfony/http-client](https://symfony.com/doc/current/http_client.html)
+and block until Better Stack responds. The default client waits at most 2 seconds for activity and 3 seconds for
+the whole request. Pass your own client to change that:
+
+```php
+$httpClient = HttpClient::create([
+	'timeout' => 5,
+	'max_duration' => 10,
+]);
+
+new LogtailClient($token, $url, $httpClient);
 ```
 
 ## Sent data
@@ -94,7 +102,7 @@ $logger->pushHandler(
 
 ## Outage handling
 
-When a request fails (transport error or an error response), the exception is thrown so the failure can be reported,
+When a request fails (`TransportExceptionInterface` or an error response), the exception is thrown so the failure can be reported,
 and `LogtailClient` drops all records for a cooldown period instead of retrying on every following batch. Cooldown
 is 60 seconds by default:
 
@@ -110,9 +118,6 @@ Example configuration for [Nette](https://nette.org) framework
 
 Given example is for [orisai/nette-monolog](https://github.com/orisai/nette-monolog), other integrations should work
 similarly.
-
-PSR-18 client must be registered as a service, e.g.
-from [orisai/nette-http-client](https://github.com/orisai/nette-http-client).
 
 ```neon
 orisai.monolog:
